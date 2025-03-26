@@ -1,98 +1,66 @@
-import { View } from "react-native";
-import * as Haptics from "expo-haptics";
-import { AutoFocus, Camera, CameraType } from "expo-camera";
-import { useEffect, useState, useCallback } from "react";
-import { IdentifyMeal } from "../api/LogMeal";
-import React, { useContext } from "react";
-import { GlobalContext } from "../context/GlobalState";
-
-import {
-  useRoute,
-  useFocusEffect,
-  useNavigation,
-  useIsFocused,
-} from "@react-navigation/native";
-
-import { GenerateAdvisory } from "../api/OpenAI";
-import { GetNutritionInformation } from "../api/BarCode";
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { CameraType } from "expo-camera";
 
 export default function CameraScreen() {
-  const { addScan } = useContext(GlobalContext);
-  const route = useRoute();
-  const navigation = useNavigation();
-  const isFocused = useIsFocused();
+  const [facing, setFacing] = useState(CameraType?.back || 'back');
+  const [permission, requestPermission] = useCameraPermissions();
 
-  const [camera, setCamera] = useState();
-  const [scanned, setScanned] = useState(false);
-  const [permission, requestPermission] = Camera.useCameraPermissions();
-
-  useEffect(() => {
-    setScanned(false);
-    requestPermission();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      (async () => {
-        if (route.params?.takePhoto) {
-          await onPhotoTaken();
-        }
-      })();
-    }, [route.params?.takePhoto])
-  );
-
-  const onBarCodeScanned = async (result) => {
-    setScanned(true);
-    camera.pausePreview();
-    const barcode = result.data;
-    const d = await GetNutritionInformation(barcode);
-
-    if (!d) {
-      camera.resumePreview();
-      setScanned(false);
-      return;
-    }
-
-    const { name, ingredients, nutrition, nutritionString } = d;
-
-    const data = await GenerateAdvisory(name, ingredients, nutritionString);
-
-    addScan({ ...data, name, ingredients, nutrition });
-    setScanned(false);
-
-    navigation.navigate("Nutrition Page", {
-      ...data,
-      name,
-      ingredients,
-      nutrition,
-    });
+  const toggleCameraFacing = () => {
+    setFacing((prev) => (prev === CameraType.back ? CameraType.front : CameraType.back));
   };
 
-  const onPhotoTaken = async () => {
-    setScanned(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const photo = await camera.takePictureAsync({
-      base64: true,
-      exif: true,
-      quality: 0,
-    });
-    camera.pausePreview();
-    const data = await IdentifyMeal(photo.base64);
-    addScan({ ...data });
-    navigation.navigate("Nutrition Page", { ...data });
-  };
+  if (!permission) return <View />;
+  if (!permission.granted) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.text}>We need your permission to show the camera</Text>
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
+          <Text style={styles.buttonText}>Grant Permission</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1">
-      {isFocused && (
-        <Camera
-          ref={(r) => setCamera(r)}
-          type={CameraType.back}
-          autoFocus={AutoFocus.on}
-          className="flex-1 flex-col justify-end items-center py-10 relative rounded-3xl overflow-hidden"
-          onBarCodeScanned={scanned ? undefined : onBarCodeScanned}
-        />
-      )}
+    <View style={styles.container}>
+      <CameraView style={styles.camera} facing={facing}>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+          </TouchableOpacity>
+        </View>
+      </CameraView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  camera: {
+    flex: 1,
+  },
+  buttonContainer: {
+    position: "absolute",
+    bottom: 50,
+    width: "100%",
+    alignItems: "center",
+  },
+  button: {
+    backgroundColor: "#000",
+    padding: 12,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+  },
+  text: {
+    textAlign: "center",
+    fontSize: 16,
+    marginBottom: 16,
+  },
+});
