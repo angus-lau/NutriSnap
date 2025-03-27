@@ -27,7 +27,7 @@ export default function CameraScreen() {
     <View style={styles.container}>
       <CameraView style={styles.camera} facing={facing}>
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}> 
           </TouchableOpacity>
         </View>
       </CameraView>
