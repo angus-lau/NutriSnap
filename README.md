@@ -15,3 +15,9 @@ This information is summarized and displayed to the user in a clean and concise 
 ## How we built it
 
 The app uses React Native for its frontend and a Python Django API for its backend. If the app detects a UPC code in the photo, it retrieves nutritional information from a UPC food nutrition API and summarizes its data in a clean and concise manner. If the app fails to detect a UPC code in the photo, it forwards the photo to its Django backend, which proceeds to classify all the food in the image using another open API. All collected nutritional data is forwarded to the OpenAI API to summarize nutritional information of the food item, and to provide the item with a nutrition rating betwween 1 and 10. This data is displayed to the user, and also added to their log of consumed food.
+
+<div align="center">
+      <a href="https://www.youtube.com/watch?v=4qnNvnklmWY">
+         <img src="https://img.youtube.com/vi/4qnNvnklmWY/0.jpg" style="width:50%;">
+      </a>
+</div>
